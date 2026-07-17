@@ -14,7 +14,7 @@ import {
     intervalNameAbbr,
     type Pitch,
 } from '../lib/theory';
-import type { CircleConfig } from '../data/lessonsContent';
+import { type CircleConfig, DIATONIC_SCALE_IDS } from '../data/lessonsContent';
 
 interface Props {
     config: CircleConfig;
@@ -24,8 +24,6 @@ interface Props {
 const ARP_NOTE_MS = 350;
 const ARP_GAP_MS = 200;
 const ARP_STEP_MS = ARP_NOTE_MS + ARP_GAP_MS;
-
-const DIATONIC_SCALE_IDS = new Set(['major', 'minor']);
 
 export default function LessonCircle({ config, caption }: Props) {
     const [highlightedPitches, setHighlightedPitches] = useState<Pitch[]>([]);

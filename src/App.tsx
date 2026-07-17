@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import LessonCircle from './components/LessonCircle';
 import CircleChromatic from './components/CircleChromatic';
-import { LESSONS } from './data/lessonsContent';
+import { LESSONS, type LessonBlock, DIATONIC_SCALE_IDS } from './data/lessonsContent';
 import {
   CHORD_SHAPES,
   SCALE_SHAPES,
@@ -21,6 +21,12 @@ export default function App() {
   const [activeChapterIdx, setActiveChapterIdx] = useState(0);
   const [sandbox, setSandbox] = useState(false);
   const currentChapter = LESSONS[activeChapterIdx];
+  const sbTimeouts = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const clearSbTimeouts = () => {
+    sbTimeouts.current.forEach(clearTimeout);
+    sbTimeouts.current = [];
+  };
 
   // Sandbox state
   const [sbKind, setSbKind] = useState<'chord' | 'scale'>('chord');
@@ -42,11 +48,11 @@ export default function App() {
     sbMode === 'fifths' && sbKind === 'scale' ? keySignature(sbRoot) : null,
   [sbMode, sbKind, sbRoot]);
   const sbSlice = useMemo(() => {
-    if (sbMode !== 'fifths' || sbKind !== 'scale' || !['major', 'minor'].includes(sbShape.id)) return undefined;
+    if (sbMode !== 'fifths' || sbKind !== 'scale' || !DIATONIC_SCALE_IDS.has(sbShape.id)) return undefined;
     return [...sbPitches].sort((a, b) => FIFTHS_ORDER.indexOf(mod(a)) - FIFTHS_ORDER.indexOf(mod(b)));
   }, [sbMode, sbKind, sbPitches, sbShape.id]);
 
-  const renderBlock = (block: any, idx: number) => {
+  const renderBlock = (block: LessonBlock, idx: number) => {
     switch (block.type) {
       case 'heading':
         if (block.level === 2) return <h2 key={idx} className="text-2xl font-extrabold tracking-tight text-white mt-6">{block.text}</h2>;
@@ -100,7 +106,7 @@ export default function App() {
             mirrorColor="#60a5fa"
             showAxis={sbShowMirror && sbKind === 'chord'}
             fifthsSliceNotes={sbSlice}
-            showSliceBackground={sbMode === 'fifths' && sbKind === 'scale' && ['major', 'minor'].includes(sbShape.id)}
+            showSliceBackground={sbMode === 'fifths' && sbKind === 'scale' && DIATONIC_SCALE_IDS.has(sbShape.id)}
             rootPitch={sbRoot}
           />
 
@@ -166,29 +172,30 @@ export default function App() {
             </div>
 
             <button onClick={() => {
+                clearSbTimeouts();
+                const schedule = (fn: () => void, ms: number) => {
+                  const id = setTimeout(fn, ms);
+                  sbTimeouts.current.push(id);
+                };
                 if (sbArpeggiate) {
                   const step = 550;
-                  sbPitches.forEach((p, i) => {
-                    setTimeout(() => setSbHighlighted([p]), i * step);
-                  });
-                  setTimeout(() => setSbHighlighted([]), sbPitches.length * step);
+                  sbPitches.forEach((p, i) => schedule(() => setSbHighlighted([p]), i * step));
+                  schedule(() => setSbHighlighted([]), sbPitches.length * step);
                   playPitchesArpeggiated(sbPitches).catch(console.warn);
                   if (sbMirror && sbMirror.length > 0) {
                     const offset = sbPitches.length * step + 600;
-                    sbMirror.forEach((p, i) => {
-                      setTimeout(() => setSbHighlighted([p]), offset + i * step);
-                    });
-                    setTimeout(() => setSbHighlighted([]), offset + sbMirror.length * step);
+                    sbMirror.forEach((p, i) => schedule(() => setSbHighlighted([p]), offset + i * step));
+                    schedule(() => setSbHighlighted([]), offset + sbMirror.length * step);
                     playPitchesArpeggiated(sbMirror, 4, 0.35, 0.2, offset / 1000).catch(console.warn);
                   }
                 } else {
                   setSbHighlighted(sbPitches);
                   playPitches(sbPitches).catch(console.warn);
                   if (sbMirror && sbMirror.length > 0) {
-                    setTimeout(() => { playPitches(sbMirror).catch(console.warn); setSbHighlighted(sbMirror); }, 1400);
-                    setTimeout(() => setSbHighlighted([]), 2800);
+                    schedule(() => { playPitches(sbMirror).catch(console.warn); setSbHighlighted(sbMirror); }, 1400);
+                    schedule(() => setSbHighlighted([]), 2800);
                   } else {
-                    setTimeout(() => setSbHighlighted([]), 1200);
+                    schedule(() => setSbHighlighted([]), 1200);
                   }
                 }
               }} className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold rounded-xl py-3 text-xs tracking-wider uppercase transition-all cursor-pointer">▶ Escuchar</button>

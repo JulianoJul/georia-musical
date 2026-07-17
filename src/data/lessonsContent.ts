@@ -6,6 +6,9 @@ export interface CircleConfig {
     showMirror?: boolean;
 }
 
+// Escalas que forman un bloque contiguo en el círculo de quintas
+export const DIATONIC_SCALE_IDS = new Set(['major', 'minor']);
+
 export type LessonBlock =
 | { type: 'heading'; level: 2 | 3; text: string }
 | { type: 'paragraph'; text: string }

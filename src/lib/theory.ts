@@ -199,8 +199,10 @@ const FLAT_KEY_NAMES: Record<number, string> = {
   1: "Reb",
   3: "Mib",
   5: "Fa",
+  6: "Solb",
   8: "Lab",
   10: "Sib",
+  11: "Dob",
 };
 
 export function keySignature(root: Pitch): KeySignature {
